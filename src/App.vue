@@ -48,12 +48,48 @@
           >
             Help
           </button>
-          <button
-            @click="downloadMD"
-            class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-md text-sm font-medium text-white transition-colors"
-          >
-            Download .MD
-          </button>
+          <button @click="isTemplateModalVisible = true" class="...">Templates</button>
+
+          <div class="relative">
+            <button
+              @click="toggleExportMenu"
+              class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-md text-sm font-medium text-white transition-colors"
+            >
+              Export ▼
+            </button>
+            <div
+              v-if="showExportMenu"
+              class="absolute mt-1 right-0 w-40 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded shadow-md z-10"
+            >
+              <ul class="text-sm text-left">
+                <li>
+                  <button
+                    @click="downloadMD"
+                    class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Download .MD
+                  </button>
+                </li>
+                <li>
+                  <button
+                    @click="downloadHTML"
+                    class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Download .HTML
+                  </button>
+                </li>
+                <li>
+                  <button
+                    disabled
+                    class="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
+                  >
+                    Print to PDF (Coming Soon)
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
           <span>{{ wordCount }} Words</span>
           <span>{{ characterCount }} Characters</span>
           <span>{{ readingTime }} min read</span>
@@ -69,6 +105,33 @@
           class="custom-scroll prose max-w-none overflow-y-auto h-96 rounded-lg border border-gray-300 bg-gray-50 p-4 text-gray-900 dark:prose-invert dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 transition-colors"
         ></div>
       </div>
+      <!-- Template Modal -->
+      <div
+        v-if="isTemplateModalVisible"
+        class="fixed inset-0 bg-white/90 dark:bg-gray-900/90 flex justify-center items-center p-4 z-50"
+      >
+        <div class="w-full max-w-lg bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-cyan-600 dark:text-cyan-400">Insert Template</h2>
+            <button @click="isTemplateModalVisible = false" class="text-2xl">&times;</button>
+          </div>
+          <ul class="space-y-4">
+            <li v-for="tpl in templates" :key="tpl.name" class="border-b pb-2">
+              <div class="flex justify-between items-center">
+                <span class="font-medium text-gray-800 dark:text-gray-200">{{ tpl.name }}</span>
+                <button
+                  @click="insertTemplate(tpl.content)"
+                  class="text-sm bg-cyan-600 text-white px-2 py-1 rounded hover:bg-cyan-700"
+                >
+                  Insert
+                </button>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Cheatsheet Modal -->
       <div
         v-if="isCheatsheetVisible"
         class="fixed inset-0 flex items-center justify-center p-4 bg-white bg-opacity-95 dark:bg-gray-900 dark:bg-opacity-95 transition-colors"
@@ -232,15 +295,66 @@
 </template>
 
 <script setup>
+// Script Imports
 import { ref, computed, watch } from 'vue'
 import { marked } from 'marked'
 
+// Ref
 const markdownInput = ref(localStorage.getItem('savedMarkdown') || '# Hello, world!')
 const isCheatsheetVisible = ref(false)
 const copyButtonText = ref('Copy')
 const isDark = ref(false)
 const themeDefault = ref(localStorage.getItem('theme'))
 const activeCheatSheetTab = ref('basic')
+const isTemplateModalVisible = ref(false)
+const templates = ref([
+  {
+    name: 'README Starter',
+    content: `# Project Title
+
+## Description:
+Write your description here...
+
+## Badges:
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+## Features:
+- Feature #1
+- Feature #2
+- Feature #3
+
+## Screenshots:
+
+## Installation:
+~~~
+npm install
+~~~
+
+## Roadmap/Planned Features:
+- Upcoming Feature #1
+- Upcoming Feature #2
+
+## Contributing:
+- Basic guide on how to contribute
+- Link to contributing.md (If applicable)
+
+## License:
+- Mention type and include file (if needed)
+
+## Credits:
+- Shoutout libraries / plugins
+
+## Contact/Author
+
+`,
+  },
+  { name: 'Blog Post', content: '# Blog Title\n\n## Introduction\n\n...' },
+])
+
+const insertTemplate = (content) => {
+  markdownInput.value = content
+  isTemplateModalVisible.value = false
+}
 
 const savedTheme = localStorage.getItem('theme')
 
@@ -265,6 +379,7 @@ function initializeTheme() {
 
 initializeTheme()
 
+// Toggle Theme (Light/Dark)
 const themeToggle = () => {
   isDark.value = !isDark.value
   if (isDark.value) {
@@ -277,13 +392,13 @@ const themeToggle = () => {
     themeDefault.value = '☀️'
   }
 }
+// Render MD to HTML
 const renderedHtml = computed(() =>
   marked(markdownInput.value, {
     gfm: true,
     breaks: true,
   }),
 )
-
 watch(markdownInput, (newValue) => {
   localStorage.setItem('savedMarkdown', newValue)
 })
@@ -302,7 +417,6 @@ const wordCount = computed(() => {
 const readingTime = computed(() => {
   return Math.ceil(wordCount.value / 200)
 })
-
 // Copy Text to Clipboard
 const copyMarkdown = () => {
   navigator.clipboard.writeText(markdownInput.value)
@@ -335,6 +449,45 @@ const downloadMD = () => {
   a.remove()
   URL.revokeObjectURL(blobUrl)
 }
+// Export Menu
+const showExportMenu = ref(false)
+const toggleExportMenu = () => {
+  showExportMenu.value = !showExportMenu.value
+  // Optional: auto-close on outside click
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!e.target.closest('.relative')) {
+        showExportMenu.value = false
+      }
+    },
+    { once: true },
+  )
+}
+// Download HTML File
+const downloadHTML = () => {
+  const fullHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Markdown Export</title>
+</head>
+<body>
+${renderedHtml.value}
+</body>
+</html>`
+  const blob = new Blob([fullHtml], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'markdown.html'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+  showExportMenu.value = false
+}
 </script>
 
 <style>
@@ -350,7 +503,6 @@ body {
 .dark body {
   background-color: #1a202c;
 }
-/* Thin scrollbar for webkit browsers */
 .custom-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
