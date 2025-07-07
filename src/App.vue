@@ -4,7 +4,7 @@
     class="w-full min-h-screen p-4 sm:p-8 font-sans transition-colors duration-300 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
     <header class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-cyan-700 dark:text-cyan-400">Markdown Previewer</h1>
+      <h1 class="text-4xl font-bold text-cyan-700 dark:text-cyan-400">Markdown Live Preview</h1>
       <p class="mt-2 text-gray-700 dark:text-gray-400">
         Type Markdown on the left, see the result on the right.
       </p>
