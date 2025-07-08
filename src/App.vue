@@ -62,16 +62,20 @@
           class="flex-shrink-0 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2"
         >
           <EditorToolbar
-            class="h-12 mr-6"
+            class="h-12"
             :copy-text="copyButtonText"
+            :is-undoable="isUndoable"
+            :is-redoable="isRedoable"
             @copy="copyMarkdown"
             @clear="clearMarkdown"
             @toggle-emojis="isEmojiModalVisible = true"
             @format-bold="formatBold"
             @format-italic="formatItalic"
-            @format-code="formatCode"
             @format-strikethrough="formatStrikethrough"
+            @format-code="formatCode"
             @format-link="formatLink"
+            @undo="handleUndo"
+            @redo="handleRedo"
           />
         </div>
       </div>
@@ -110,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, nextTick, onBeforeUpdate } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { marked } from 'marked'
 import MarkdownEditor from './components/MarkdownEditor.vue'
 import MarkdownViewer from './components/MarkdownViewer.vue'
@@ -120,11 +124,11 @@ import ThemeToggle from './components/ThemeToggle.vue'
 import EmojiPickerModal from './components/EmojiPickerModal.vue'
 import HeaderActions from './components/HeaderActions.vue'
 import EditorToolbar from './components/EditorToolbar.vue'
+import StatsDisplay from './components/StatsDisplay.vue'
 import { templates } from './data/templates.js'
-import { slashCommands } from './data/slashCommands.js'
 import { useTheme } from './composables/useTheme.js'
 import { useScrollSync } from './composables/useScrollSync.js'
-import StatsDisplay from './components/StatsDisplay.vue'
+import { useHistory } from './composables/useHistory.js'
 
 const { isDark } = useTheme()
 
@@ -136,57 +140,15 @@ const isEmojiModalVisible = ref(false)
 const editorRef = ref(null)
 const viewerRef = ref(null)
 
-const isCommandMenuOpen = ref(false)
-const commandSearchTerm = ref('')
-const commandMenuSelectedIndex = ref(0)
-const commandItems = ref([])
+const { undo, redo, isUndoable, isRedoable, recordChange } = useHistory(markdownInput)
+
+watch(markdownInput, (newValue) => {
+  localStorage.setItem('savedMarkdown', newValue)
+})
 
 const editorEl = computed(() => editorRef.value?.textareaRef)
 const viewerEl = computed(() => viewerRef.value?.viewerRef)
 useScrollSync(editorEl, viewerEl)
-
-watch(markdownInput, async (newValue) => {
-  localStorage.setItem('savedMarkdown', newValue)
-  await nextTick()
-  const textarea = editorRef.value?.textareaRef
-  if (!textarea) return
-
-  const cursorPosition = textarea.selectionStart
-  const textBeforeCursor = newValue.substring(0, cursorPosition)
-  const lastSlashIndex = textBeforeCursor.lastIndexOf('/')
-  const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ')
-  const lastNewlineIndex = textBeforeCursor.lastIndexOf('\n')
-
-  if (
-    lastSlashIndex !== -1 &&
-    lastSlashIndex > lastSpaceIndex &&
-    lastSlashIndex > lastNewlineIndex
-  ) {
-    isCommandMenuOpen.value = true
-    commandSearchTerm.value = textBeforeCursor.substring(lastSlashIndex + 1)
-    commandMenuSelectedIndex.value = 0
-  } else {
-    isCommandMenuOpen.value = false
-  }
-})
-
-watch(commandMenuSelectedIndex, (newIndex) => {
-  const selectedElement = commandItems.value[newIndex]
-  if (selectedElement) {
-    selectedElement.scrollIntoView({ block: 'nearest' })
-  }
-})
-
-onBeforeUpdate(() => {
-  commandItems.value = []
-})
-
-const filteredCommands = computed(() => {
-  if (!commandSearchTerm.value) return slashCommands
-  return slashCommands.filter((command) =>
-    command.name.toLowerCase().startsWith(commandSearchTerm.value.toLowerCase()),
-  )
-})
 
 const renderedHtml = computed(() =>
   marked(markdownInput.value, { gfm: true, breaks: true, mangle: false, headerIds: false }),
@@ -201,58 +163,8 @@ const readingTime = computed(() => {
   return Math.ceil(wordCount.value / wordsPerMinute)
 })
 
-// --- Methods ---
-const executeCommand = (command) => {
-  const textarea = editorRef.value?.textareaRef
-  if (!textarea) return
-
-  const cursorPosition = textarea.selectionStart
-  const textBeforeCursor = markdownInput.value.substring(0, cursorPosition)
-  const textAfterCursor = markdownInput.value.substring(cursorPosition)
-
-  const textToReplace = `/${commandSearchTerm.value}`
-  const newTextBefore = textBeforeCursor.slice(0, textBeforeCursor.length - textToReplace.length)
-
-  if (command.action) {
-    if (command.action === 'open-templates') isTemplateModalVisible.value = true
-    if (command.action === 'open-emojis') isEmojiModalVisible.value = true
-    if (command.action === 'open-help') isCheatsheetVisible.value = true
-    markdownInput.value = newTextBefore + textAfterCursor
-  } else if (command.content) {
-    const newText = newTextBefore + command.content + textAfterCursor
-    markdownInput.value = newText
-    nextTick(() => {
-      textarea.focus()
-      const newCursorPosition = (newTextBefore + command.content).length
-      textarea.selectionStart = textarea.selectionEnd = newCursorPosition
-    })
-  }
-  isCommandMenuOpen.value = false
-}
-
-const handleCommandMenuKeys = (event) => {
-  if (!isCommandMenuOpen.value) return
-
-  if (event.key === 'ArrowUp') {
-    event.preventDefault()
-    commandMenuSelectedIndex.value =
-      (commandMenuSelectedIndex.value - 1 + filteredCommands.value.length) %
-      filteredCommands.value.length
-  } else if (event.key === 'ArrowDown') {
-    event.preventDefault()
-    commandMenuSelectedIndex.value =
-      (commandMenuSelectedIndex.value + 1) % filteredCommands.value.length
-  } else if (event.key === 'Enter' || event.key === 'Tab') {
-    event.preventDefault()
-    const selectedCommand = filteredCommands.value[commandMenuSelectedIndex.value]
-    if (selectedCommand) {
-      executeCommand(selectedCommand)
-    }
-  } else if (event.key === 'Escape') {
-    isCommandMenuOpen.value = false
-  }
-}
-
+const handleUndo = () => undo()
+const handleRedo = () => redo()
 const insertTemplate = (content) => {
   markdownInput.value = content
   isTemplateModalVisible.value = false
@@ -275,25 +187,48 @@ const clearMarkdown = () => {
     markdownInput.value = ''
   }
 }
-
 const formatBold = () => {
   editorRef.value?.wrapText('**')
 }
-
 const formatItalic = () => {
   editorRef.value?.wrapText('_')
 }
-
 const formatCode = () => {
   editorRef.value?.wrapText('\n```\n', '\n```\n')
 }
 const formatStrikethrough = () => {
   editorRef.value?.wrapText('~~')
 }
-
 const formatLink = () => {
   editorRef.value?.insertLink()
 }
+
+onMounted(() => {
+  const handleKeydown = (e) => {
+    const isMac = navigator.platform.toUpperCase().includes('MAC')
+    const ctrl = isMac ? e.metaKey : e.ctrlKey
+
+    if (ctrl && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault()
+      handleUndo()
+    }
+
+    if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault()
+      handleRedo()
+    }
+
+    if ([' ', 'Enter', '.', ',', ';', ':', '?', '!'].includes(e.key)) {
+      recordChange()
+    }
+  }
+
+  window.addEventListener('keydown', handleKeydown)
+
+  onBeforeUnmount(() => {
+    window.removeEventListener('keydown', handleKeydown)
+  })
+})
 
 const toggleCheatsheet = () => {
   isCheatsheetVisible.value = !isCheatsheetVisible.value
