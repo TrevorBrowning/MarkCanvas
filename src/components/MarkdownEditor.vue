@@ -1,5 +1,8 @@
 <template>
   <div class="flex flex-col h-full">
+    <div class="flex-shrink-0 flex justify-center items-center mb-2">
+      <label class="text-lg font-medium text-slate-800 dark:text-slate-300">MD Input</label>
+    </div>
     <textarea
       ref="textareaRef"
       :value="modelValue"
@@ -27,17 +30,24 @@ export default {
     const insertTextAtCursor = async (text) => {
       const textarea = textareaRef.value
       if (!textarea) return
+
       const start = textarea.selectionStart
       const end = textarea.selectionEnd
+
       const newText = props.modelValue.substring(0, start) + text + props.modelValue.substring(end)
       emit('update:modelValue', newText)
+
       await nextTick()
+
       textarea.focus()
       textarea.selectionStart = textarea.selectionEnd = start + text.length
     }
+
     expose({
       insertTextAtCursor,
+      textareaRef,
     })
+
     return {
       textareaRef,
     }

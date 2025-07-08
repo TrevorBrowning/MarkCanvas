@@ -7,6 +7,7 @@
       class="flex-shrink-0 flex items-center justify-between px-4 sm:px-8 h-16 bg-white border-b border-slate-200 dark:bg-slate-800 dark:border-slate-700"
     >
       <div class="flex items-center gap-3">
+        <img src="./assets/MarkCanvas-Logo.png" alt="MarkCanvas Logo" class="h-8 w-auto" />
         <h1 class="text-xl font-bold text-slate-800 dark:text-slate-100">MarkCanvas</h1>
       </div>
       <div class="flex items-center gap-4">
@@ -45,7 +46,7 @@
       </div>
 
       <div class="flex flex-col h-full min-h-0">
-        <MarkdownViewer :markdown="markdownInput" />
+        <MarkdownViewer ref="viewerRef" :markdown="markdownInput" />
       </div>
     </main>
 
@@ -67,6 +68,8 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { marked } from 'marked'
+
+// Component Imports
 import MarkdownEditor from './components/MarkdownEditor.vue'
 import MarkdownViewer from './components/MarkdownViewer.vue'
 import TemplatesModal from './components/TemplatesModal.vue'
@@ -75,22 +78,40 @@ import ThemeToggle from './components/ThemeToggle.vue'
 import EmojiPickerModal from './components/EmojiPickerModal.vue'
 import HeaderActions from './components/HeaderActions.vue'
 import EditorToolbar from './components/EditorToolbar.vue'
+
+// Data & Composables
 import { templates } from './data/templates.js'
 import { useTheme } from './composables/useTheme.js'
+import { useScrollSync } from './composables/useScrollSync.js'
 
 const { isDark } = useTheme()
 
+// --- State and Refs ---
 const markdownInput = ref(localStorage.getItem('savedMarkdown') || '# Hello, world!')
 const copyButtonText = ref('Copy')
 const isCheatsheetVisible = ref(false)
 const isTemplateModalVisible = ref(false)
 const isEmojiModalVisible = ref(false)
-const editorRef = ref(null)
 
+// --- Refs for Child Components ---
+const editorRef = ref(null)
+const viewerRef = ref(null)
+
+// --- Scroll Sync Logic (Simplified) ---
+// These computed properties will automatically update with the DOM elements when they become available.
+const editorEl = computed(() => editorRef.value?.textareaRef)
+const viewerEl = computed(() => viewerRef.value?.viewerRef)
+
+// The composable will reactively handle adding/removing listeners.
+useScrollSync(editorEl, viewerEl)
+// --- End of Scroll Sync Logic ---
+
+// --- Watchers ---
 watch(markdownInput, (newValue) => {
   localStorage.setItem('savedMarkdown', newValue)
 })
 
+// --- Computed Properties ---
 const renderedHtml = computed(() =>
   marked(markdownInput.value, { gfm: true, breaks: true, mangle: false, headerIds: false }),
 )
@@ -104,18 +125,17 @@ const readingTime = computed(() => {
   return Math.ceil(wordCount.value / wordsPerMinute)
 })
 
+// --- Methods ---
 const insertTemplate = (content) => {
   markdownInput.value = content
   isTemplateModalVisible.value = false
 }
-
 const handleEmojiSelect = (emoji) => {
   if (editorRef.value) {
     editorRef.value.insertTextAtCursor(emoji)
   }
   isEmojiModalVisible.value = false
 }
-
 const copyMarkdown = () => {
   navigator.clipboard.writeText(markdownInput.value)
   copyButtonText.value = 'Copied!'
@@ -123,17 +143,14 @@ const copyMarkdown = () => {
     copyButtonText.value = 'Copy'
   }, 2000)
 }
-
 const clearMarkdown = () => {
   if (confirm('Are you sure you want to clear the Canvas?')) {
     markdownInput.value = ''
   }
 }
-
 const toggleCheatsheet = () => {
   isCheatsheetVisible.value = !isCheatsheetVisible.value
 }
-
 const downloadMD = () => {
   const blob = new Blob([markdownInput.value], { type: 'text/markdown' })
   const url = URL.createObjectURL(blob)
@@ -143,7 +160,6 @@ const downloadMD = () => {
   a.click()
   URL.revokeObjectURL(url)
 }
-
 const downloadHTML = () => {
   const fullHtml = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>MarkCanvas Export</title>\n  <style>body { font-family: sans-serif; }</style>\n</head>\n<body>\n${renderedHtml.value}\n</body>\n</html>`
   const blob = new Blob([fullHtml], { type: 'text/html' })
@@ -154,7 +170,6 @@ const downloadHTML = () => {
   a.click()
   URL.revokeObjectURL(url)
 }
-
 const downloadPlainText = () => {
   let text = markdownInput.value
   text = text
@@ -184,7 +199,6 @@ html,
 body {
   margin: 0;
 }
-
 .dark body {
   background-color: #1a202c;
 }
@@ -193,27 +207,22 @@ body {
   width: 6px;
   height: 6px;
 }
-
 .custom-scroll::-webkit-scrollbar-thumb {
   background-color: rgba(100, 100, 100, 0.5);
   border-radius: 10px;
 }
-
 .custom-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .custom-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 100, 100, 0.5) transparent;
 }
-
 .prose p img {
   display: inline-block;
   margin-top: 0;
   margin-bottom: 0;
 }
-
 .prose {
   overflow-wrap: break-word;
 }
