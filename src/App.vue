@@ -1,5 +1,6 @@
 <template>
   <div
+    @keydown="handleCommandMenuKeys"
     :class="{ dark: isDark }"
     class="flex flex-col h-screen w-full font-sans bg-slate-100 dark:bg-slate-900"
   >
@@ -26,7 +27,38 @@
       class="flex-grow min-h-0 grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto p-4 sm:p-8"
     >
       <div class="grid h-full gap-2" style="grid-template-rows: 1fr auto">
-        <MarkdownEditor class="min-h-0" ref="editorRef" v-model="markdownInput" />
+        <div class="relative min-h-0">
+          <MarkdownEditor class="h-full" ref="editorRef" v-model="markdownInput" />
+          <div
+            v-if="isCommandMenuOpen"
+            class="absolute bottom-2 left-0 right-0 z-10 mx-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg"
+          >
+            <ul class="max-h-64 overflow-y-auto custom-scroll">
+              <li
+                v-for="(command, index) in filteredCommands"
+                :key="command.name"
+                :ref="
+                  (el) => {
+                    if (el) commandItems[index] = el
+                  }
+                "
+              >
+                <button
+                  @click="executeCommand(command)"
+                  :class="{
+                    'bg-slate-100 dark:bg-slate-700': index === commandMenuSelectedIndex,
+                  }"
+                  class="w-full text-left p-3 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <p class="font-medium text-slate-800 dark:text-slate-200">/{{ command.name }}</p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    {{ command.description }}
+                  </p>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
         <div
           class="flex-shrink-0 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2"
         >
@@ -44,32 +76,35 @@
           </div>
         </div>
       </div>
-
       <div class="flex flex-col h-full min-h-0">
-        <MarkdownViewer ref="viewerRef" :markdown="markdownInput" />
+        <MarkdownViewer :markdown="markdownInput" ref="viewerRef" />
       </div>
     </main>
 
-    <TemplatesModal
-      v-if="isTemplateModalVisible"
-      :templates="templates"
-      @close="isTemplateModalVisible = false"
-      @insert-template="insertTemplate"
-    />
-    <CheatsheetModal v-if="isCheatsheetVisible" @close="toggleCheatsheet" />
-    <EmojiPickerModal
-      v-if="isEmojiModalVisible"
-      @close="isEmojiModalVisible = false"
-      @select-emoji="handleEmojiSelect"
-    />
+    <Transition>
+      <TemplatesModal
+        v-if="isTemplateModalVisible"
+        :templates="templates"
+        @close="isTemplateModalVisible = false"
+        @insert-template="insertTemplate"
+      />
+    </Transition>
+    <Transition>
+      <CheatsheetModal v-if="isCheatsheetVisible" @close="toggleCheatsheet" />
+    </Transition>
+    <Transition>
+      <EmojiPickerModal
+        v-if="isEmojiModalVisible"
+        @close="isEmojiModalVisible = false"
+        @select-emoji="handleEmojiSelect"
+      />
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick, onBeforeUpdate } from 'vue'
 import { marked } from 'marked'
-
-// Component Imports
 import MarkdownEditor from './components/MarkdownEditor.vue'
 import MarkdownViewer from './components/MarkdownViewer.vue'
 import TemplatesModal from './components/TemplatesModal.vue'
@@ -78,40 +113,73 @@ import ThemeToggle from './components/ThemeToggle.vue'
 import EmojiPickerModal from './components/EmojiPickerModal.vue'
 import HeaderActions from './components/HeaderActions.vue'
 import EditorToolbar from './components/EditorToolbar.vue'
-
-// Data & Composables
 import { templates } from './data/templates.js'
+import { slashCommands } from './data/slashCommands.js'
 import { useTheme } from './composables/useTheme.js'
 import { useScrollSync } from './composables/useScrollSync.js'
 
 const { isDark } = useTheme()
 
-// --- State and Refs ---
 const markdownInput = ref(localStorage.getItem('savedMarkdown') || '# Hello, world!')
 const copyButtonText = ref('Copy')
 const isCheatsheetVisible = ref(false)
 const isTemplateModalVisible = ref(false)
 const isEmojiModalVisible = ref(false)
-
-// --- Refs for Child Components ---
 const editorRef = ref(null)
 const viewerRef = ref(null)
 
-// --- Scroll Sync Logic (Simplified) ---
-// These computed properties will automatically update with the DOM elements when they become available.
+const isCommandMenuOpen = ref(false)
+const commandSearchTerm = ref('')
+const commandMenuSelectedIndex = ref(0)
+const commandItems = ref([])
+
 const editorEl = computed(() => editorRef.value?.textareaRef)
 const viewerEl = computed(() => viewerRef.value?.viewerRef)
-
-// The composable will reactively handle adding/removing listeners.
 useScrollSync(editorEl, viewerEl)
-// --- End of Scroll Sync Logic ---
 
-// --- Watchers ---
-watch(markdownInput, (newValue) => {
+watch(markdownInput, async (newValue) => {
   localStorage.setItem('savedMarkdown', newValue)
+  await nextTick()
+  const textarea = editorRef.value?.textareaRef
+  if (!textarea) return
+
+  const cursorPosition = textarea.selectionStart
+  const textBeforeCursor = newValue.substring(0, cursorPosition)
+  const lastSlashIndex = textBeforeCursor.lastIndexOf('/')
+  const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ')
+  const lastNewlineIndex = textBeforeCursor.lastIndexOf('\n')
+
+  if (
+    lastSlashIndex !== -1 &&
+    lastSlashIndex > lastSpaceIndex &&
+    lastSlashIndex > lastNewlineIndex
+  ) {
+    isCommandMenuOpen.value = true
+    commandSearchTerm.value = textBeforeCursor.substring(lastSlashIndex + 1)
+    commandMenuSelectedIndex.value = 0
+  } else {
+    isCommandMenuOpen.value = false
+  }
 })
 
-// --- Computed Properties ---
+watch(commandMenuSelectedIndex, (newIndex) => {
+  const selectedElement = commandItems.value[newIndex]
+  if (selectedElement) {
+    selectedElement.scrollIntoView({ block: 'nearest' })
+  }
+})
+
+onBeforeUpdate(() => {
+  commandItems.value = []
+})
+
+const filteredCommands = computed(() => {
+  if (!commandSearchTerm.value) return slashCommands
+  return slashCommands.filter((command) =>
+    command.name.toLowerCase().startsWith(commandSearchTerm.value.toLowerCase()),
+  )
+})
+
 const renderedHtml = computed(() =>
   marked(markdownInput.value, { gfm: true, breaks: true, mangle: false, headerIds: false }),
 )
@@ -126,6 +194,57 @@ const readingTime = computed(() => {
 })
 
 // --- Methods ---
+const executeCommand = (command) => {
+  const textarea = editorRef.value?.textareaRef
+  if (!textarea) return
+
+  const cursorPosition = textarea.selectionStart
+  const textBeforeCursor = markdownInput.value.substring(0, cursorPosition)
+  const textAfterCursor = markdownInput.value.substring(cursorPosition)
+
+  const textToReplace = `/${commandSearchTerm.value}`
+  const newTextBefore = textBeforeCursor.slice(0, textBeforeCursor.length - textToReplace.length)
+
+  if (command.action) {
+    if (command.action === 'open-templates') isTemplateModalVisible.value = true
+    if (command.action === 'open-emojis') isEmojiModalVisible.value = true
+    if (command.action === 'open-help') isCheatsheetVisible.value = true
+    markdownInput.value = newTextBefore + textAfterCursor
+  } else if (command.content) {
+    const newText = newTextBefore + command.content + textAfterCursor
+    markdownInput.value = newText
+    nextTick(() => {
+      textarea.focus()
+      const newCursorPosition = (newTextBefore + command.content).length
+      textarea.selectionStart = textarea.selectionEnd = newCursorPosition
+    })
+  }
+  isCommandMenuOpen.value = false
+}
+
+const handleCommandMenuKeys = (event) => {
+  if (!isCommandMenuOpen.value) return
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    commandMenuSelectedIndex.value =
+      (commandMenuSelectedIndex.value - 1 + filteredCommands.value.length) %
+      filteredCommands.value.length
+  } else if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    commandMenuSelectedIndex.value =
+      (commandMenuSelectedIndex.value + 1) % filteredCommands.value.length
+  } else if (event.key === 'Enter' || event.key === 'Tab') {
+    event.preventDefault()
+    const selectedCommand = filteredCommands.value[commandMenuSelectedIndex.value]
+    if (selectedCommand) {
+      executeCommand(selectedCommand)
+    }
+  } else if (event.key === 'Escape') {
+    isCommandMenuOpen.value = false
+  }
+}
+
 const insertTemplate = (content) => {
   markdownInput.value = content
   isTemplateModalVisible.value = false
@@ -183,7 +302,6 @@ const downloadPlainText = () => {
     .replace(/`{3}.*$/gm, '')
     .replace(/`/g, '')
     .replace(/\n{3,}/g, '\n\n')
-
   const blob = new Blob([text], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -218,6 +336,7 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 100, 100, 0.5) transparent;
 }
+
 .prose p img {
   display: inline-block;
   margin-top: 0;
@@ -225,5 +344,15 @@ body {
 }
 .prose {
   overflow-wrap: break-word;
+}
+
+.v-enter-active,
+.v-leave-active {
+  transition: all 0.2s ease;
+}
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
 }
 </style>

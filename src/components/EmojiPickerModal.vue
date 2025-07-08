@@ -28,10 +28,17 @@
 </template>
 
 <script>
+import { useEscapeKey } from '../composables/useEscapeKey.js'
+
 export default {
   name: 'EmojiPickerModal',
   emits: ['close', 'select-emoji'],
-  setup() {
+
+  setup(props, { emit }) {
+    useEscapeKey(() => {
+      emit('close')
+    })
+
     const emojis = [
       '😊',
       '😂',

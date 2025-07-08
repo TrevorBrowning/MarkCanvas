@@ -1,14 +1,18 @@
 <template>
-  <div class="flex flex-col h-full">
-    <div class="flex-shrink-0 flex justify-center items-center mb-2">
-      <label class="text-lg font-medium text-slate-800 dark:text-slate-300">MD Input</label>
+  <div class="relative flex flex-col h-full">
+    <div
+      v-if="!modelValue"
+      class="absolute top-0 left-0 mt-12 px-4 py-3 text-slate-400 dark:text-slate-600 pointer-events-none"
+    >
+      <p>Start typing your markdown here...</p>
+      <p>Use / to view commands</p>
     </div>
+
     <textarea
       ref="textareaRef"
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
-      class="flex-grow min-h-0 w-full rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition-colors resize-none custom-scroll"
-      placeholder="Start typing your markdown here..."
+      class="flex-grow min-h-0 w-full rounded-lg border border-slate-300 bg-transparent px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 transition-colors resize-none custom-scroll z-10"
     ></textarea>
   </div>
 </template>

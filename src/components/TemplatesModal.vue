@@ -1,6 +1,7 @@
 <template>
   <div
     class="fixed inset-0 bg-white/90 dark:bg-gray-900/90 flex justify-center items-center p-4 z-50"
+    @click.self="$emit('close')"
   >
     <div
       class="w-full max-w-3xl bg-gray-100 dark:bg-gray-800 rounded-lg p-6 flex flex-col max-h-[85vh]"
@@ -58,6 +59,8 @@
 </template>
 
 <script>
+import { useEscapeKey } from '../composables/useEscapeKey.js'
+
 export default {
   name: 'TemplatesModal',
   props: {
@@ -67,6 +70,13 @@ export default {
     },
   },
   emits: ['close', 'insert-template'],
+
+  setup(props, { emit }) {
+    useEscapeKey(() => {
+      emit('close')
+    })
+  },
+
   data() {
     return {
       searchTerm: '',

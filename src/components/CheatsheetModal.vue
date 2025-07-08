@@ -1,6 +1,7 @@
 <template>
   <div
     class="fixed inset-0 flex items-center justify-center p-4 bg-white bg-opacity-95 dark:bg-gray-900 dark:bg-opacity-95 transition-colors z-50"
+    @click.self="$emit('close')"
   >
     <div
       class="relative w-full max-w-lg rounded-lg bg-gray-50 p-6 shadow-xl text-gray-900 dark:bg-gray-800 dark:text-gray-100 transition-colors sm:p-8"
@@ -103,10 +104,15 @@
 </template>
 
 <script>
+import { useEscapeKey } from '../composables/useEscapeKey.js'
 export default {
   name: 'CheatsheetModal',
   emits: ['close'],
-  data() {
+  setup(props, { emit }) {
+    useEscapeKey(() => {
+      emit('close')
+    })
+
     return {
       activeCheatSheetTab: 'basic',
     }
