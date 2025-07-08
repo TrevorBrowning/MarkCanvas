@@ -8,7 +8,6 @@
       class="flex-shrink-0 flex items-center justify-between px-4 sm:px-8 h-16 bg-white border-b border-slate-200 dark:bg-slate-800 dark:border-slate-700"
     >
       <div class="flex items-center gap-3">
-        <img src="./assets/MarkCanvas-Logo.png" alt="MarkCanvas Logo" class="h-8 w-auto" />
         <h1 class="text-xl font-bold text-slate-800 dark:text-slate-100">MarkCanvas</h1>
       </div>
       <div class="flex items-center gap-4">
