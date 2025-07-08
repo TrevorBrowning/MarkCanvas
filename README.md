@@ -32,19 +32,21 @@ MarkCanvas is a web-based application designed for a seamless writing experience
 - **Export Options**: Download your work as a `.md`, `.html`, or `.txt` file.
 
 - **Word & Character Count**: Keep track of your document's length and estimated reading time.
+- **Slash Commands**: Allow users to type / to open a command menu and quickly insert elements like tables, images, or code blocks.
+- **Scroll Sync**: Automatically sync the scroll position of the preview pane with the editor pane.
 
 ## Roadmap
 
 ### Core Editor Enhancements
 
-- **Slash Commands**: Allow users to type / to open a command menu and quickly insert elements like tables, images, or code blocks.
+- ~~**Slash Commands**~~
 - **Drag-and-Drop Image Uploads**: Enable users to drag an image file directly into the editor, which would automatically upload it and insert the corresponding markdown tag.
 - **Toolbar Formatting Actions**: Add buttons to the editor's toolbar (e.g., Bold, Italic, Link) that apply markdown formatting to selected text.
 - **Mobile Support**
 
 ### Preview & Export
 
-- **Scroll Sync**: Automatically sync the scroll position of the preview pane with the editor pane.
+- ~~**Scroll Sync**~~
 - **PDF Export**
 - **Shareable Links**
 
