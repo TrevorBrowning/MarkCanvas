@@ -26,7 +26,7 @@
       class="flex-grow min-h-0 grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-7xl mx-auto p-4 sm:p-8"
     >
       <div class="grid h-full gap-2" style="grid-template-rows: 1fr auto">
-        <div class="relative min-h-0">
+        <div class="relative min-h-0 overflow-y-auto">
           <MarkdownEditor class="h-full" ref="editorRef" v-model="markdownInput" />
           <div
             v-if="isCommandMenuOpen"
@@ -62,21 +62,29 @@
           class="flex-shrink-0 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2"
         >
           <EditorToolbar
-            class="mr-6"
+            class="h-12 mr-6"
             :copy-text="copyButtonText"
             @copy="copyMarkdown"
             @clear="clearMarkdown"
             @toggle-emojis="isEmojiModalVisible = true"
+            @format-bold="formatBold"
+            @format-italic="formatItalic"
+            @format-code="formatCode"
+            @format-strikethrough="formatStrikethrough"
+            @format-link="formatLink"
           />
-          <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-            <span>{{ wordCount }} Words</span>
-            <span>{{ characterCount }} Characters</span>
-            <span>{{ readingTime }} min read</span>
-          </div>
         </div>
       </div>
-      <div class="flex flex-col h-full min-h-0">
-        <MarkdownViewer :markdown="markdownInput" ref="viewerRef" />
+      <div class="grid h-full min-h-0 gap-2" style="grid-template-rows: 1fr auto">
+        <div class="overflow-y-auto min-h-0">
+          <MarkdownViewer :markdown="markdownInput" ref="viewerRef" class="h-full" />
+        </div>
+        <StatsDisplay
+          class="h-14"
+          :wordCount="wordCount"
+          :characterCount="characterCount"
+          :readingTime="readingTime"
+        />
       </div>
     </main>
 
@@ -116,6 +124,7 @@ import { templates } from './data/templates.js'
 import { slashCommands } from './data/slashCommands.js'
 import { useTheme } from './composables/useTheme.js'
 import { useScrollSync } from './composables/useScrollSync.js'
+import StatsDisplay from './components/StatsDisplay.vue'
 
 const { isDark } = useTheme()
 
@@ -266,6 +275,26 @@ const clearMarkdown = () => {
     markdownInput.value = ''
   }
 }
+
+const formatBold = () => {
+  editorRef.value?.wrapText('**')
+}
+
+const formatItalic = () => {
+  editorRef.value?.wrapText('_')
+}
+
+const formatCode = () => {
+  editorRef.value?.wrapText('\n```\n', '\n```\n')
+}
+const formatStrikethrough = () => {
+  editorRef.value?.wrapText('~~')
+}
+
+const formatLink = () => {
+  editorRef.value?.insertLink()
+}
+
 const toggleCheatsheet = () => {
   isCheatsheetVisible.value = !isCheatsheetVisible.value
 }

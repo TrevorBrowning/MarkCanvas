@@ -53,7 +53,7 @@ export const slashCommands = [
   {
     name: 'date',
     description: 'Insert current date',
-    content: new Date().toDateString(), // e.g., "Tue Jul 08 2025"
+    content: new Date().toDateString(),
   },
   // Action Commands
   {
