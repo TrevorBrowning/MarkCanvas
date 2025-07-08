@@ -34,7 +34,7 @@ MarkCanvas is a web-based application designed for a seamless writing experience
 
 ## Try It
 
-Use the live version here: [Markdown Creator](https://www.TrevorBrowning.com/markcanvas)
+Use the live version here: [MarkCanvas](https://www.TrevorBrowning.com/markcanvas)
 
 ## Contributing
 
