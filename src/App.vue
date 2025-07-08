@@ -1,423 +1,135 @@
 <template>
   <div
     :class="{ dark: isDark }"
-    class="w-full min-h-screen p-4 sm:p-8 font-sans transition-colors duration-300 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    class="w-full min-h-screen font-sans transition-colors duration-300 bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-400"
   >
-    <header class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-cyan-700 dark:text-cyan-400">Markdown Live Preview</h1>
-      <p class="mt-2 text-gray-700 dark:text-gray-400">
-        Type Markdown on the left, see the result on the right.
-      </p>
-    </header>
-    <div>
-      <button
-        @click="themeToggle"
-        class="fixed top-0 right-0 px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition-colors"
-      >
-        {{ themeDefault }}
-      </button>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Markdown Input -->
+    <header
+      class="grid grid-cols-3 items-center px-4 sm:px-8 py-3 bg-white border-b border-slate-200 dark:bg-slate-800 dark:border-slate-700"
+    >
       <div>
-        <div class="flex justify-center items-center mb-2">
-          <label class="text-lg font-medium text-gray-800 dark:text-gray-300">MD Input</label>
-        </div>
+        <img src="/logo-placeholder.svg" alt="MarkCanvas Logo" class="h-8 w-auto" />
+      </div>
 
-        <textarea
-          v-model="markdownInput"
-          class="custom-scroll w-full h-96 rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 transition-colors resize-none"
-        ></textarea>
-        <!-- Tools Section -->
-        <div class="flex items-center gap-4">
-          <button
-            @click="copyMarkdown"
-            class="bg-cyan-600 hover:bg-cyan-700 px-3 py-1 rounded-md text-sm font-medium text-white transition-colors"
-          >
-            {{ copyButtonText }}
-          </button>
-          <button
-            @click="clearMarkdown"
-            class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md text-sm font-medium text-white transition-colors"
-          >
-            Clear
-          </button>
-          <button
-            @click="toggleCheatsheet"
-            class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded-md text-sm font-medium text-white transition-colors"
-          >
-            Help
-          </button>
-          <button @click="isTemplateModalVisible = true" class="...">Templates</button>
+      <div class="text-center">
+        <h1 class="text-xl font-bold text-slate-800 dark:text-slate-100">MarkCanvas</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">A Live Markdown Editor</p>
+      </div>
 
-          <div class="relative">
-            <button
-              @click="toggleExportMenu"
-              class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-md text-sm font-medium text-white transition-colors"
-            >
-              Export ▼
-            </button>
-            <div
-              v-if="showExportMenu"
-              class="absolute mt-1 right-0 w-40 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded shadow-md z-10"
-            >
-              <ul class="text-sm text-left">
-                <li>
-                  <button
-                    @click="downloadMD"
-                    class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Download .MD
-                  </button>
-                </li>
-                <li>
-                  <button
-                    @click="downloadHTML"
-                    class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Download .HTML
-                  </button>
-                </li>
-                <li>
-                  <button
-                    disabled
-                    class="w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed"
-                  >
-                    Print to PDF (Coming Soon)
-                  </button>
-                </li>
-              </ul>
+      <div class="justify-self-end">
+        <ThemeToggle />
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <MarkdownEditor ref="editorRef" v-model="markdownInput" />
+          <div
+            class="mt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-2"
+          >
+            <AppToolbar
+              class="mr-6"
+              :copy-text="copyButtonText"
+              @copy="copyMarkdown"
+              @clear="clearMarkdown"
+              @toggle-help="toggleCheatsheet"
+              @toggle-templates="isTemplateModalVisible = true"
+              @download-md="downloadMD"
+              @download-html="downloadHTML"
+              @toggle-emojis="isEmojiModalVisible = true"
+            />
+            <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+              <span>{{ wordCount }} Words</span>
+              <span>{{ characterCount }} Characters</span>
+              <span>{{ readingTime }} min read</span>
             </div>
           </div>
+        </div>
 
-          <span>{{ wordCount }} Words</span>
-          <span>{{ characterCount }} Characters</span>
-          <span>{{ readingTime }} min read</span>
+        <div>
+          <MarkdownViewer :markdown="markdownInput" />
         </div>
       </div>
-      <!-- Markdown Preview -->
-      <div>
-        <div class="flex justify-center items-center mb-2">
-          <label class="text-lg font-medium text-gray-800 dark:text-gray-300">MD Preview</label>
-        </div>
-        <div
-          v-html="renderedHtml"
-          class="custom-scroll prose max-w-none overflow-y-auto h-96 rounded-lg border border-gray-300 bg-gray-50 p-4 text-gray-900 dark:prose-invert dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 transition-colors"
-        ></div>
-      </div>
-      <!-- Template Modal -->
-      <div
-        v-if="isTemplateModalVisible"
-        class="fixed inset-0 bg-white/90 dark:bg-gray-900/90 flex justify-center items-center p-4 z-50"
-      >
-        <div class="w-full max-w-lg bg-gray-100 dark:bg-gray-800 rounded-lg p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-cyan-600 dark:text-cyan-400">Insert Template</h2>
-            <button @click="isTemplateModalVisible = false" class="text-2xl">&times;</button>
-          </div>
-          <ul class="space-y-4">
-            <li v-for="tpl in templates" :key="tpl.name" class="border-b pb-2">
-              <div class="flex justify-between items-center">
-                <span class="font-medium text-gray-800 dark:text-gray-200">{{ tpl.name }}</span>
-                <button
-                  @click="insertTemplate(tpl.content)"
-                  class="text-sm bg-cyan-600 text-white px-2 py-1 rounded hover:bg-cyan-700"
-                >
-                  Insert
-                </button>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
+    </main>
 
-      <!-- Cheatsheet Modal -->
-      <div
-        v-if="isCheatsheetVisible"
-        class="fixed inset-0 flex items-center justify-center p-4 bg-white bg-opacity-95 dark:bg-gray-900 dark:bg-opacity-95 transition-colors"
-      >
-        <div
-          class="relative w-full max-w-lg rounded-lg bg-gray-50 p-6 shadow-xl text-gray-900 dark:bg-gray-800 dark:text-gray-100 transition-colors sm:p-8"
-        >
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-cyan-700 dark:text-cyan-400">Markdown Cheatsheet</h2>
-            <button
-              :class="{ 'font-bold underline': activeCheatSheetTab === 'basic' }"
-              @click="activeCheatSheetTab = 'basic'"
-            >
-              Basic
-            </button>
-            <button
-              :class="{ 'font-bold underline': activeCheatSheetTab === 'gfm' }"
-              @click="activeCheatSheetTab = 'gfm'"
-            >
-              GFM
-            </button>
-            <button
-              @click="toggleCheatsheet"
-              class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 text-2xl leading-none transition-colors"
-            >
-              &times;
-            </button>
-          </div>
-          <div v-if="activeCheatSheetTab === 'basic'">
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Text Formatting</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">*Italic*</code> &rarr;
-                <em>Italic</em>
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">**Bold**</code> &rarr;
-                <strong>Bold</strong>
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">~~Strikethrough~~</code>
-                &rarr;
-                <del>Strikethrough</del>
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Headings</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li><code class="bg-gray-200 px-1 rounded dark:bg-gray-700"># Heading 1</code></li>
-              <li><code class="bg-gray-200 px-1 rounded dark:bg-gray-700">## Heading 2</code></li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Lists</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">* Unordered item</code>
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">1. Ordered item</code>
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Links & Images</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700"
-                  >[Link Text](https://...)</code
-                >
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700"
-                  >![Alt Text](image.jpg)</code
-                >
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Code & Blockquotes</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li><code class="bg-gray-200 px-1 rounded dark:bg-gray-700">`inline code`</code></li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">```\ncode block\n```</code>
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">&gt; Blockquote</code>
-              </li>
-            </ul>
-          </div>
-          <div v-if="activeCheatSheetTab === 'gfm'">
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">
-              GitHub Flavored Markdown (GFM)
-            </h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">- [x] Task completed</code>
-                &rarr; Task list item (checked)
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">- [ ] Task incomplete</code>
-                &rarr; Task list item (unchecked)
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Tables</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">| Header | Header |</code>
-                &rarr; Table headers
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">| --- | --- |</code>
-                &rarr; Header separator
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">| Cell | Cell |</code>
-                &rarr; Table row cells
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Strikethrough</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">~~Strikethrough~~</code>
-                &rarr; Strikethrough text
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Autolinks</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700"
-                  >&lt;https://example.com&gt;</code
-                >
-                &rarr; Automatically linked URL
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">Fenced Code Blocks</h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">```</code>
-                <em>(start or end code block)</em>
-              </li>
-              <li>
-                <code class="bg-gray-200 px-1 rounded dark:bg-gray-700">```js</code>
-                <em>(code block with language for syntax highlighting)</em>
-              </li>
-            </ul>
-
-            <h3 class="mt-4 mb-2 text-cyan-700 font-bold dark:text-cyan-500">
-              Line Breaks & Paragraphs
-            </h3>
-            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <li>Single line breaks are rendered as <code>&lt;br&gt;</code> (press Enter once)</li>
-              <li>Paragraphs require a blank line between them</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+    <TemplatesModal
+      v-if="isTemplateModalVisible"
+      :templates="templates"
+      @close="isTemplateModalVisible = false"
+      @insert-template="insertTemplate"
+    />
+    <CheatsheetModal v-if="isCheatsheetVisible" @close="toggleCheatsheet" />
+    <EmojiPickerModal
+      v-if="isEmojiModalVisible"
+      @close="isEmojiModalVisible = false"
+      @select-emoji="handleEmojiSelect"
+    />
   </div>
 </template>
 
 <script setup>
-// Script Imports
-import { ref, computed, watch } from 'vue'
+// Global Imports
+import { ref, watch, computed } from 'vue'
 import { marked } from 'marked'
+
+// Component Imports
+import MarkdownEditor from './components/MarkdownEditor.vue'
+import MarkdownViewer from './components/MarkdownViewer.vue'
+import AppToolbar from './components/Toolbar.vue'
+import TemplatesModal from './components/TemplatesModal.vue'
+import CheatsheetModal from './components/CheatsheetModal.vue'
+import ThemeToggle from './components/ThemeToggle.vue'
+import EmojiPickerModal from './components/EmojiPickerModal.vue'
+import { templates } from './data/templates.js'
+import { useTheme } from './composables/useTheme.js'
+
+const { isDark } = useTheme()
 
 // Ref
 const markdownInput = ref(localStorage.getItem('savedMarkdown') || '# Hello, world!')
-const isCheatsheetVisible = ref(false)
 const copyButtonText = ref('Copy')
-const isDark = ref(false)
-const themeDefault = ref(localStorage.getItem('theme'))
-const activeCheatSheetTab = ref('basic')
+const isCheatsheetVisible = ref(false)
 const isTemplateModalVisible = ref(false)
-const templates = ref([
-  {
-    name: 'README Starter',
-    content: `# Project Title
+const isEmojiModalVisible = ref(false)
+const editorRef = ref(null)
 
-## Description:
-Write your description here...
+// Watchers
+watch(markdownInput, (newValue) => {
+  localStorage.setItem('savedMarkdown', newValue)
+})
 
-## Badges:
-![License](https://img.shields.io/badge/license-MIT-blue)
+// Computer - Render
+const renderedHtml = computed(() => marked(markdownInput.value, { gfm: true, breaks: true }))
 
-## Features:
-- Feature #1
-- Feature #2
-- Feature #3
+const characterCount = computed(() => markdownInput.value.length)
 
-## Screenshots:
+const wordCount = computed(() => {
+  if (!markdownInput.value.trim()) return 0
+  return markdownInput.value.trim().split(/\s+/).length
+})
 
-## Installation:
-~~~
-npm install
-~~~
+const readingTime = computed(() => {
+  const wordsPerMinute = 200
+  return Math.ceil(wordCount.value / wordsPerMinute)
+})
 
-## Roadmap/Planned Features:
-- Upcoming Feature #1
-- Upcoming Feature #2
+// ---METHODS---
 
-## Contributing:
-- Basic guide on how to contribute
-- Link to contributing.md (If applicable)
-
-## License:
-- Mention type and include file (if needed)
-
-## Credits:
-- Shoutout libraries / plugins
-
-## Contact/Author
-
-`,
-  },
-  { name: 'Blog Post', content: '# Blog Title\n\n## Introduction\n\n...' },
-])
-
+// Insert Template
 const insertTemplate = (content) => {
   markdownInput.value = content
   isTemplateModalVisible.value = false
 }
 
-const savedTheme = localStorage.getItem('theme')
-
-function initializeTheme() {
-  if (savedTheme === 'dark') {
-    isDark.value = true
-    themeDefault.value = '🌙'
-    document.documentElement.classList.add('dark')
-  } else if (savedTheme === 'light') {
-    isDark.value = false
-    themeDefault.value = '☀️'
-    document.documentElement.classList.remove('dark')
-  } else {
-    isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
-    if (isDark.value) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+// ADD THIS FUNCTION
+const handleEmojiSelect = (emoji) => {
+  if (editorRef.value) {
+    editorRef.value.insertTextAtCursor(emoji)
   }
+  isEmojiModalVisible.value = false // Close modal after selection
 }
 
-initializeTheme()
-
-// Toggle Theme (Light/Dark)
-const themeToggle = () => {
-  isDark.value = !isDark.value
-  if (isDark.value) {
-    document.documentElement.classList.add('dark')
-    localStorage.setItem('theme', 'dark')
-    themeDefault.value = '🌙'
-  } else {
-    document.documentElement.classList.remove('dark')
-    localStorage.setItem('theme', 'light')
-    themeDefault.value = '☀️'
-  }
-}
-// Render MD to HTML
-const renderedHtml = computed(() =>
-  marked(markdownInput.value, {
-    gfm: true,
-    breaks: true,
-  }),
-)
-watch(markdownInput, (newValue) => {
-  localStorage.setItem('savedMarkdown', newValue)
-})
-// Track Character Count
-const characterCount = computed(() => {
-  return markdownInput.value.length
-})
-// Track Word Count
-const wordCount = computed(() => {
-  if (!markdownInput.value.trim()) {
-    return 0
-  }
-  return markdownInput.value.trim().split(/\s+/).length
-})
-// Track Reading Time
-const readingTime = computed(() => {
-  return Math.ceil(wordCount.value / 200)
-})
-// Copy Text to Clipboard
+// Copy MD to Clipboard
 const copyMarkdown = () => {
   navigator.clipboard.writeText(markdownInput.value)
   copyButtonText.value = 'Copied!'
@@ -425,68 +137,39 @@ const copyMarkdown = () => {
     copyButtonText.value = 'Copy'
   }, 2000)
 }
-// Clear Canvas
+// Clear Markdown on Editor
 const clearMarkdown = () => {
-  const userConfirmed = confirm('Are you sure you want to clear the Canvas?')
-  if (userConfirmed) {
+  if (confirm('Are you sure you want to clear the Canvas?')) {
     markdownInput.value = ''
   }
 }
-// Toggle MD Cheatsheet
+
+// Toggle Cheatsheet
 const toggleCheatsheet = () => {
   isCheatsheetVisible.value = !isCheatsheetVisible.value
 }
-// Download MD File
+
+// Download Markdown File
 const downloadMD = () => {
-  const dlMD = markdownInput.value
-  const blob = new Blob([dlMD], { type: 'text/markdown' })
-  const blobUrl = URL.createObjectURL(blob)
+  const blob = new Blob([markdownInput.value], { type: 'text/markdown' })
+  const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  a.href = blobUrl
+  a.href = url
   a.download = 'markdown.md'
-  document.body.appendChild(a)
   a.click()
-  a.remove()
-  URL.revokeObjectURL(blobUrl)
+  URL.revokeObjectURL(url)
 }
-// Export Menu
-const showExportMenu = ref(false)
-const toggleExportMenu = () => {
-  showExportMenu.value = !showExportMenu.value
-  // Optional: auto-close on outside click
-  document.addEventListener(
-    'click',
-    (e) => {
-      if (!e.target.closest('.relative')) {
-        showExportMenu.value = false
-      }
-    },
-    { once: true },
-  )
-}
+
 // Download HTML File
 const downloadHTML = () => {
-  const fullHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Markdown Export</title>
-</head>
-<body>
-${renderedHtml.value}
-</body>
-</html>`
+  const fullHtml = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>Markdown Export</title>\n  <style>body { font-family: sans-serif; }</style>\n</head>\n<body>\n${renderedHtml.value}\n</body>\n</html>`
   const blob = new Blob([fullHtml], { type: 'text/html' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = 'markdown.html'
-  document.body.appendChild(a)
   a.click()
-  a.remove()
   URL.revokeObjectURL(url)
-  showExportMenu.value = false
 }
 </script>
 
@@ -503,22 +186,27 @@ body {
 .dark body {
   background-color: #1a202c;
 }
+
 .custom-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 .custom-scroll::-webkit-scrollbar-thumb {
   background-color: rgba(100, 100, 100, 0.5);
   border-radius: 10px;
 }
-
 .custom-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .custom-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 100, 100, 0.5) transparent;
+}
+.prose p img {
+  display: inline-block;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 6px;
+  padding-bottom: 30px;
 }
 </style>
