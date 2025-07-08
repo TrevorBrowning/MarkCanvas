@@ -1,7 +1,7 @@
 <template>
   <button
     @click="themeToggle"
-    class="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition-colors z-10"
+    class="flex items-center justify-center h-10 w-10 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors"
   >
     {{ themeDefault }}
   </button>

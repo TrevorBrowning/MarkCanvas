@@ -11,6 +11,7 @@ MarkCanvas is a web-based application designed for a seamless writing experience
 ## Table of Contents
 
 - [Features](#features)
+- [Roadmap](#roadmap)
 - [Try It](#try-it)
 - [Contributing](#contributing)
 - [License](#license)
@@ -24,13 +25,34 @@ MarkCanvas is a web-based application designed for a seamless writing experience
 
 - **Light & Dark Modes**: A theme toggle to switch between light and dark modes, with your preference saved locally.
 
-- **Rich Templates**: A library of pre-built templates for common documents like READMEs, blog posts, and meeting notes.
+- **Rich Templates**: A searchable library of over 50 pre-built templates, organized by category for common documents like READMEs, blog posts, and project plans.
 
 - **Emoji Picker**: Easily insert emojis into your document at the cursor's location.
 
-- **Export Options**: Download your work as a .md or .html file.
+- **Export Options**: Download your work as a `.md`, `.html`, or `.txt` file.
 
 - **Word & Character Count**: Keep track of your document's length and estimated reading time.
+
+## Roadmap
+
+### Core Editor Enhancements
+
+- **Slash Commands**: Allow users to type / to open a command menu and quickly insert elements like tables, images, or code blocks.
+- **Drag-and-Drop Image Uploads**: Enable users to drag an image file directly into the editor, which would automatically upload it and insert the corresponding markdown tag.
+- **Toolbar Formatting Actions**: Add buttons to the editor's toolbar (e.g., Bold, Italic, Link) that apply markdown formatting to selected text.
+- **Mobile Support**
+
+### Preview & Export
+
+- **Scroll Sync**: Automatically sync the scroll position of the preview pane with the editor pane.
+- **PDF Export**
+- **Shareable Links**
+
+### Advanced Functionality
+
+- **Cloud Sync**: Implement user accounts and cloud storage
+- **Resizable Panes**: Allow the user to drag the divider between the editor and preview panes to resize them.
+- **Presentation Mode**
 
 ## Try It
 

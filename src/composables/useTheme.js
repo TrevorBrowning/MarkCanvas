@@ -3,20 +3,7 @@ import { ref, onMounted } from 'vue'
 const isDark = ref(false)
 
 export function useTheme() {
-  const themeDefault = ref('☀️')
-
-  const initializeTheme = () => {
-    const savedTheme = localStorage.getItem('theme')
-    if (
-      savedTheme === 'dark' ||
-      (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    ) {
-      isDark.value = true
-    } else {
-      isDark.value = false
-    }
-    updateDOM()
-  }
+  const themeDefault = ref('🌙')
 
   const updateDOM = () => {
     if (isDark.value) {
@@ -28,6 +15,20 @@ export function useTheme() {
       themeDefault.value = '☀️'
       localStorage.setItem('theme', 'light')
     }
+  }
+
+  // This function is now simplified to default to dark mode.
+  const initializeTheme = () => {
+    const savedTheme = localStorage.getItem('theme')
+
+    // If the saved theme is 'light', set it to light mode.
+    // In all other cases (first visit, or theme is 'dark'), default to dark mode.
+    if (savedTheme === 'light') {
+      isDark.value = false
+    } else {
+      isDark.value = true
+    }
+    updateDOM()
   }
 
   const themeToggle = () => {
