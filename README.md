@@ -1,6 +1,7 @@
 # MarkCanvas
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)[![Vue.js](https://img.shields.io/badge/Vue.js-3-42b883.svg)](https://vuejs.org/)[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38b2ac.svg)](https://tailwindcss.com/)
+
 A clean, modern, and feature-rich live markdown editor built with Vue.js and Tailwind CSS.
 
 ## Description
